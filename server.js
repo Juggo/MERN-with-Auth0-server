@@ -5,13 +5,20 @@ const jwtAuthz = require('express-jwt-authz');
 const jwksRsa = require('jwks-rsa');
 const cors = require('cors');
 const morgan = require('morgan');
+
+const mongoose = require('mongoose');
+const Messages = require('./model/messages');
+
 require('dotenv').config();
 
 if (!process.env.AUTH0_DOMAIN || !process.env.AUTH0_AUDIENCE) {
-  throw 'Make sure you have AUTH0_DOMAIN, and AUTH0_AUDIENCE in your .env file'
+  throw 'Make sure you have AUTH0_DOMAIN, and AUTH0_AUDIENCE in your Heroku app or .env file'
 }
 
 var port = process.env.PORT || 3001;
+
+//db config
+mongoose.connect(process.env.MONGODB_URI);
 
 app.use(cors());
 app.use(morgan('API Request (port 3001): :method :url :status :response-time ms - :res[content-length]'));
@@ -34,7 +41,14 @@ const checkJwt = jwt({
 const checkScopes = jwtAuthz([ 'read:messages' ]);
 
 app.get('/api/public', function(req, res) {
-  res.json({ message: "Hello from a public endpoint! You don't need to be authenticated to see this." });
+    Messages.find(function(err, messages) {
+        if (err)
+                res.send(err);
+                //responds with a json object of our database comments.
+                res.json(messages)
+        });
+    
+//  res.json({ message: "Hello from a public endpoint! You don't need to be authenticated to see this." });
 });
 
 app.get('/api/private', checkJwt, checkScopes, function(req, res) {
