@@ -6,8 +6,11 @@ const jwksRsa = require('jwks-rsa');
 const cors = require('cors');
 const morgan = require('morgan');
 
+
 const mongoose = require('mongoose');
 const Messages = require('./model/messages');
+const Providers = require('./model/providers');
+
 
 require('dotenv').config();
 
@@ -17,7 +20,7 @@ if (!process.env.AUTH0_DOMAIN || !process.env.AUTH0_AUDIENCE) {
 
 var port = process.env.PORT || 3001;
 
-//db config
+//db config - FIX ON DEPLOYMENT!!!! - to process.env.MONGODB_URI
 mongoose.connect(process.env.MONGODB_URI);
 
 app.use(cors());
@@ -40,12 +43,12 @@ const checkJwt = jwt({
 
 const checkScopes = jwtAuthz([ 'read:messages' ]);
 
-app.get('/api/public', function(req, res) {
-    Messages.find(function(err, messages) {
+app.get('/api/providers', checkJwt, checkScopes,  function(req, res) {
+    Providers.find(function(err, providers) {
         if (err)
                 res.send(err);
                 //responds with a json object of our database comments.
-                res.json(messages)
+                res.json(providers)
         });
     
 //  res.json({ message: "Hello from a public endpoint! You don't need to be authenticated to see this." });
