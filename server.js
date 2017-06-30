@@ -9,7 +9,7 @@ const morgan = require('morgan');
 
 const mongoose = require('mongoose');
 const Messages = require('./model/messages');
-const Providers = require('./model/providers');
+const Provider = require('./model/providers');
 
 
 require('dotenv').config();
@@ -21,7 +21,7 @@ if (!process.env.AUTH0_DOMAIN || !process.env.AUTH0_AUDIENCE) {
 var port = process.env.PORT || 3001;
 
 //db config - FIX ON DEPLOYMENT!!!! - to process.env.MONGODB_URI
-mongoose.connect(process.env.MONGODB_URI);
+mongoose.connect('mongodb://heroku_03604v9b:o7btoqu9qp8ljpcmqu946rk61g@ds139342.mlab.com:39342/heroku_03604v9b');
 
 app.use(cors());
 app.use(morgan('API Request (port 3001): :method :url :status :response-time ms - :res[content-length]'));
@@ -43,8 +43,8 @@ const checkJwt = jwt({
 
 const checkScopes = jwtAuthz([ 'read:messages' ]);
 
-app.get('/api/providers', checkJwt, checkScopes,  function(req, res) {
-    Providers.find(function(err, providers) {
+app.get('/api/providers', function(req, res) {
+    Provider.find(function(err, providers) {
         if (err)
                 res.send(err);
                 //responds with a json object of our database comments.
@@ -52,10 +52,17 @@ app.get('/api/providers', checkJwt, checkScopes,  function(req, res) {
         });
     
 //  res.json({ message: "Hello from a public endpoint! You don't need to be authenticated to see this." });
-});
-
-app.get('/api/private', checkJwt, checkScopes, function(req, res) {
-  res.json({ message: "Hello from a private endpoint! You need to be authenticated and have a scope of read:messages to see this." });
+})
+.post(function(req, res) {
+    var provider = new Provider();
+    //body parser lets us use the req.body
+    provider.name = req.body.name;
+    provider.email = req.body.email;
+    provider.save(function(err) {
+        if (err)
+            res.send(err);
+        res.json({ message: 'Provider successfully added!' });
+    });
 });
 
 app.listen(port);
