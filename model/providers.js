@@ -9,8 +9,13 @@ var ProvidersSchema = new Schema({
     name: String,
     img: String,
     info: String,
-    address: String,
-    rating: Number 
+    website: String,
+    address: {
+        street: String,
+        city: String,
+        postalCode: String,
+        country: String
+    }
 });
 
 //export our module to use in server.js

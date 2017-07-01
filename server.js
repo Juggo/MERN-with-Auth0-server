@@ -9,7 +9,6 @@ const morgan = require('morgan');
 const bodyParser = require('body-parser');
 const router = express.Router();
 const mongoose = require('mongoose');
-const Messages = require('./model/messages');
 const Provider = require('./model/providers');
 
 
@@ -82,8 +81,8 @@ router.route('/providers')
     provider.name = req.body.name;
     provider.img = req.body.img;
     provider.info = req.body.info;
+    provider.website = req.body.website;
     provider.address = req.body.address;
-    provider.rating = req.body.rating;
     provider.save(function(err) {
         if (err)
             res.send(err);
