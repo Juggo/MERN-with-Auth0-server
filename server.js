@@ -102,7 +102,7 @@ router.route('/providers')
 });
 
 //Adding a route to a specific provider based on the database ID
-router.route('/providers/:provider_id')
+router.route('/provider/:provider_id')
     //The put method gives us provider based on 
     //the ID passed to the route
 .get(checkJwt, checkScopes, function(req, res) {
