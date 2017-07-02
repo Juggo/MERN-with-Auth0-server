@@ -101,6 +101,20 @@ router.route('/providers')
     });
 });
 
+//Adding a route to a specific provider based on the database ID
+router.route('/providers/:provider_id')
+    //The put method gives us provider based on 
+    //the ID passed to the route
+.get(checkJwt, checkScopes, function(req, res) {
+    Provider.findById(escape(req.params.provider_id), function(err, provider) {
+        if (err)
+            res.send(err);
+        
+        //responds with a json object of our database provider.
+        res.json(provider)
+    });
+});
+
 app.use('/api', router);
 
 app.listen(port);
