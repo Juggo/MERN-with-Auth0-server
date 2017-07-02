@@ -8,6 +8,7 @@ var Schema = mongoose.Schema;
 var ProvidersSchema = new Schema({
     name: String,
     img: String,
+    description: String,
     info: String,
     website: String,
     address: {

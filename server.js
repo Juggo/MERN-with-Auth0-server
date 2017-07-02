@@ -64,6 +64,16 @@ router.get('/', function(req, res) {
  res.json({ message: 'API Initialized!'});
 });
 
+// USE AGAINST NOSQL INJECTION
+//
+//escape() converts the string into ascii code. $ne is converted into %24ne.
+//
+//var privateKey = escape(req.params.privateKey);
+//
+//App.findOne({ privateKey: privateKey }, function (err, app) {
+//  //do something here
+//}
+
 //adding the /comments route to our /api router
 router.route('/providers')
 .get(checkJwt, checkScopes, function(req, res) {
@@ -80,6 +90,7 @@ router.route('/providers')
     //body parser lets us use the req.body
     provider.name = req.body.name;
     provider.img = req.body.img;
+    provider.description = req.body.description;
     provider.info = req.body.info;
     provider.website = req.body.website;
     provider.address = req.body.address;
