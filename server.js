@@ -10,6 +10,7 @@ const bodyParser = require('body-parser');
 const router = express.Router();
 const mongoose = require('mongoose');
 const Provider = require('./model/providers');
+const Review = require('./model/reviews');
 
 
 require('dotenv').config();
@@ -112,6 +113,17 @@ router.route('/provider/:provider_id')
         
         //responds with a json object of our database provider.
         res.json(provider)
+    });
+});
+
+//It is significantly faster to use find() + limit() because findOne() will always read + return the document if it exists. 
+router.route('/reviews/:provider_id')
+.get(function(req, res) {
+    Review.find({provider_id: escape(req.params.provider_id)}, function(err, review) {
+        if (err)
+            res.send(err);
+        
+        res.json(review)
     });
 });
 

@@ -6,8 +6,8 @@ var Schema = mongoose.Schema;
 //create new instance of the mongoose.schema. the schema takes an 
 //object that shows the shape of your database entries.
 var ReviewsSchema = new Schema({
-    user: String,
-    provider: String,
+    user_id: String,
+    provider_id: String,
     providerRating: {
         communication: Number,
         management: Number,
