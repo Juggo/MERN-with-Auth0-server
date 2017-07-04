@@ -16,7 +16,8 @@ var ProvidersSchema = new Schema({
         city: String,
         postalCode: String,
         country: String
-    }
+    },
+    rating: Number
 });
 
 //export our module to use in server.js

@@ -8,6 +8,8 @@ var Schema = mongoose.Schema;
 var ReviewsSchema = new Schema({
     user_id: String,
     provider_id: String,
+    createdAt: { type : Date, default: Date.now },
+    updatedAt: { type : Date, default: Date.now },
     providerRating: {
         communication: Number,
         management: Number,

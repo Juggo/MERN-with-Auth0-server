@@ -13,6 +13,58 @@ const Provider = require('./model/providers');
 const Review = require('./model/reviews');
 
 
+//var request = require("request");
+//var manToken = '';
+//var options = { method: 'POST',
+//  url: 
+//  headers: { 'content-type': 'application/json' },
+//  body: 
+//   { grant_type: 'client_credentials',
+//     client_id: 
+//     client_secret: 
+//     audience: 
+//  json: true };
+//
+//request(options, function (error, response, body) {
+//  if (error) throw new Error(error);
+//  
+//  manToken = response;
+//  console.log(body);
+//});
+//
+//var ManagementClient = require('auth0').ManagementClient;
+//var management = new ManagementClient({
+//  token: response.accessToken,
+//  domain: process.env.AUTH0_DOMAIN
+//});
+//
+//var AuthenticationClient = require('auth0').AuthenticationClient;
+//
+//var auth0 = new AuthenticationClient({
+//  domain: process.env.AUTH0_DOMAIN,
+//  clientId: 
+//  clientSecret: 
+//});
+//
+//auth0.clientCredentialsGrant({
+//  audience: 'https://' + process.env.AUTH0_DOMAIN + '/api/v2/',
+//  scope: 'read:users'
+//}, function (err, response) {
+//  if (err) {
+//    // Handle error.
+//  }
+//  console.log(response.access_token);
+//});
+//
+//auth0.getUsers(function (err, users) {
+//  if (err) {
+//    // handle error.
+//  }
+//  console.log(users);
+//  res.json({users});
+//});
+
+
 require('dotenv').config();
 
 if (!process.env.AUTH0_DOMAIN || !process.env.AUTH0_AUDIENCE) {
@@ -82,7 +134,7 @@ router.route('/providers')
         if (err)
                 res.send(err);
                 //responds with a json object of our database comments.
-                res.json(providers)
+                res.json(providers);
         });
     
 //  res.json({ message: "Hello from a public endpoint! You don't need to be authenticated to see this." });
@@ -112,19 +164,85 @@ router.route('/provider/:provider_id')
             res.send(err);
         
         //responds with a json object of our database provider.
-        res.json(provider)
+        res.json(provider);
+    });
+}).put(checkJwt, checkScopes, function(req, res) {
+    Provider.findById(escape(req.params.provider_id), function(err, provider) {
+        if (err)
+            res.send(err);
+
+        //If nothing was changed we will not alter the field.
+        (req.body.name) ? provider.name = req.body.name : null;
+        (req.body.img) ? provider.img = req.body.img : null;
+        (req.body.description) ? provider.description = req.body.description : null;
+        (req.body.info) ? provider.info = req.body.info : null;
+        (req.body.website) ? provider.website = req.body.website : null;
+        (req.body.address) ? provider.address = req.body.address : null;
+        (req.body.rating) ? provider.rating = req.body.rating : null;
+        //save provider
+        provider.save(function(err) {
+            if (err)
+                res.send(err);
+            res.json({ message: 'Provider has been updated' });
+        });
     });
 });
 
 //It is significantly faster to use find() + limit() because findOne() will always read + return the document if it exists. 
 router.route('/reviews/:provider_id')
-.get(function(req, res) {
+.get(checkJwt, checkScopes, function(req, res) {
     Review.find({provider_id: escape(req.params.provider_id)}, function(err, review) {
         if (err)
             res.send(err);
         
         res.json(review)
     });
+}).post(checkJwt, checkScopes, function(req, res) {
+    var review = new Review();
+    //body parser lets us use the req.body
+    review.user_id = req.body.user_id;
+    review.provider_id = req.body.provider_id;
+    review.providerRating = req.body.providerRating;
+    review.serviceType = req.body.serviceType;
+    review.serviceRating = req.body.serviceRating;
+    review.comment = req.body.comment;
+    review.satisfaction = req.body.satisfaction;
+    review.save(function(err) {
+        if (err)
+            res.send(err);
+        res.json({ message: 'Review successfully added!' });
+    });
+});
+
+router.route('/reviews-aggregate/:provider_id')
+.get(checkJwt, checkScopes, function(req, res) {
+    Review.aggregate( [ 
+        { $match: { provider_id: escape(req.params.provider_id) } },
+        
+        { $group: { 
+                _id: "$provider_id",
+                count: { $sum: 1 },
+                communication: { $sum: "$providerRating.communication" },
+                management: { $sum: "$providerRating.management" },
+                integrity: { $sum: "$providerRating.integrity" },
+                reliability: { $sum: "$providerRating.reliability" },
+                availability: { $sum: "$providerRating.availability" },
+                timeliness: { $sum: "$serviceRating.timeliness" },
+                quality: { $sum: "$serviceRating.quality" },
+                costs: { $sum: "$serviceRating.costs" } 
+            }
+        },
+        { $project: { 
+                totalAverage: { $divide: [ { $sum: ["$communication", "$management", "$integrity", "$reliability", 
+                    "$availability", "$timeliness", "$quality", "$costs"] }, { $multiply: [8, { $min: "$count" }] } ] } }
+        }
+    ],
+        function(err, review) {
+            if (err)
+                res.send(err);
+
+            res.json(review);
+        });
 });
 
 app.use('/api', router);
