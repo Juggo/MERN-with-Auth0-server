@@ -2,19 +2,18 @@
   "name": "calling-an-api",
   "version": "0.1.0",
   "private": true,
-  "devDependencies": {
-    
-  },
+  "devDependencies": {},
   "dependencies": {
+    "body-parser": "^1.17.2",
+    "content-filter": "^1.1.1",
     "cors": "^2.8.1",
     "dotenv": "^4.0.0",
     "express": "^4.14.1",
     "express-jwt": "^5.1.0",
     "express-jwt-authz": "^1.0.0",
     "jwks-rsa": "^1.1.1",
-    "morgan": "^1.8.2",
     "mongoose": "^4.10.8",
-    "body-parser": "^1.17.2"
+    "morgan": "^1.8.2"
   },
   "scripts": {
     "start": "node server.js"

@@ -11,7 +11,7 @@ const router = express.Router();
 const mongoose = require('mongoose');
 const Provider = require('./model/providers');
 const Review = require('./model/reviews');
-
+const filter = require('content-filter')
 
 //var request = require("request");
 //var manToken = '';
@@ -100,6 +100,8 @@ const checkScopes = jwtAuthz([ 'read:messages' ]);
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
 
+app.use(filter());
+
 //To prevent errors from Cross Origin Resource Sharing, we will set 
 //our headers to allow CORS with middleware like so:
 app.use(function(req, res, next) {
@@ -127,18 +129,9 @@ router.get('/', function(req, res) {
 //  //do something here
 //}
 
-//adding the /comments route to our /api router
+
 router.route('/providers')
-.get(checkJwt, checkScopes, function(req, res) {
-    Provider.find(function(err, providers) {
-        if (err)
-                res.send(err);
-                //responds with a json object of our database comments.
-                res.json(providers);
-        });
-    
-//  res.json({ message: "Hello from a public endpoint! You don't need to be authenticated to see this." });
-}).post(checkJwt, checkScopes, function(req, res) {
+.post(checkJwt, checkScopes, function(req, res) {
     var provider = new Provider();
     //body parser lets us use the req.body
     provider.name = req.body.name;
@@ -151,6 +144,71 @@ router.route('/providers')
         if (err)
             res.send(err);
         res.json({ message: 'Provider successfully added!' });
+    });
+});
+
+router.route('/providers/:skip')
+.get(checkJwt, checkScopes, function(req, res) {
+    var query = Provider.find().skip(parseInt(escape(req.params.skip)) * 10).limit(10); 
+    query.exec(function(err, providers) {
+        if (err)
+            res.send(err);
+        //responds with a json object of our database comments.
+
+        res.json(providers);
+    });
+});
+
+router.route('/providers/:skip/:text')
+.get(checkJwt, checkScopes, function(req, res) {
+    var query = Provider.find({name: {$regex : req.params.text, $options : 'i' }}).skip(parseInt(escape(req.params.skip)) * 10).limit(10); 
+    query.exec(function(err, providers) {
+        if (err)
+            res.send(err);
+        //responds with a json object of our database comments.
+
+        res.json(providers);
+    });
+});
+
+router.route('/providersNames/:text')
+.get(checkJwt, checkScopes, function(req, res) {
+    Provider.aggregate( [ 
+        { $match: { name: {$regex : req.params.text, $options : 'i' } } },
+        { $project: { 
+                text: "$name" }
+        }
+    ],
+    function(err, review) {
+        if (err)
+            res.send(err);
+
+        res.json(review);
+    });
+});
+
+router.route('/providersCount')
+.get(checkJwt, checkScopes, function(req, res) {
+    Provider.count(function(err, providers) {
+        if (err)
+            res.send(err);
+        //responds with a json object of our database comments.
+
+        res.json(providers);
+    });
+});
+
+router.route('/providersCount/:text')
+.get(checkJwt, checkScopes, function(req, res) {
+    Provider.aggregate( [ 
+        { $match: { name: {$regex : req.params.text, $options : 'i' } } },
+        { $group: { _id: null, count: { $sum: 1 } } }
+    ],
+    function(err, providers) {
+        if (err)
+            res.send(err);
+
+        res.json(providers);
     });
 });
 
@@ -179,12 +237,58 @@ router.route('/provider/:provider_id')
         (req.body.website) ? provider.website = req.body.website : null;
         (req.body.address) ? provider.address = req.body.address : null;
         (req.body.rating) ? provider.rating = req.body.rating : null;
+        (req.body.rating === 0) ? provider.rating = req.body.rating : null;
         //save provider
         provider.save(function(err) {
             if (err)
                 res.send(err);
             res.json({ message: 'Provider has been updated' });
         });
+    });
+});
+
+router.route('/userReviews/:user_id')
+.get(checkJwt, checkScopes, function(req, res) {
+    Review.find({user_id: req.params.user_id}, function(err, review) {
+        if (err)
+            res.send(err);
+        
+        res.json(review);
+    });
+});
+
+router.route('/review/:review_id')
+.get(checkJwt, checkScopes, function(req, res) {
+    Review.findById(escape(req.params.review_id), function(err, review) {
+        if (err)
+            res.send(err);
+        
+        res.json(review);
+    });
+}).put(checkJwt, checkScopes, function(req, res) {
+    Review.findById(escape(req.params.review_id), function(err, review) {
+        if (err)
+            res.send(err);
+
+        //If nothing was changed we will not alter the field.
+        (req.body.providerRating) ? review.providerRating = req.body.providerRating : null;
+        (req.body.serviceType) ? review.serviceType = req.body.serviceType : null;
+        (req.body.serviceRating) ? review.serviceRating = req.body.serviceRating : null;
+        (req.body.comment) ? review.comment = req.body.comment : null;
+        (req.body.satisfaction) ? review.satisfaction = req.body.satisfaction : null;
+        //save provider
+        review.save(function(err) {
+            if (err)
+                res.send(err);
+            res.json({ message: 'Review has been updated' });
+        });
+    });
+}).delete(checkJwt, checkScopes, function(req, res) {
+    Review.remove({ _id: escape(req.params.review_id) }, function(err, review) {
+        if (err)
+            res.send(err);
+        
+        res.json({ message: 'Review has been deleted' });
     });
 });
 
@@ -195,7 +299,7 @@ router.route('/reviews/:provider_id')
         if (err)
             res.send(err);
         
-        res.json(review)
+        res.json(review);
     });
 }).post(checkJwt, checkScopes, function(req, res) {
     var review = new Review();
@@ -217,8 +321,7 @@ router.route('/reviews/:provider_id')
 router.route('/reviews-aggregate/:provider_id')
 .get(checkJwt, checkScopes, function(req, res) {
     Review.aggregate( [ 
-        { $match: { provider_id: escape(req.params.provider_id) } },
-        
+        { $match: { provider_id: mongoose.Types.ObjectId(escape(req.params.provider_id)) } },
         { $group: { 
                 _id: "$provider_id",
                 count: { $sum: 1 },
